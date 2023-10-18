@@ -5,7 +5,7 @@ const scrapeCategory = (browser, url) => new Promise(async (resolve, reject) => 
         await page.goto(url)
         console.log('>>Truy cập vào ' + url)
         await page.waitForSelector('#shopify-section-all-collections')
-        console.log('>> Website đã laod xong...');
+        console.log('>> Website đã load xong...');
 
         const dataCategory = await page.$$eval('#shopify-section-all-collections > div.all-collections > div.sdcollections-content > ul.sdcollections-list > li', els => {
             dataCategory = els.map(el => {
@@ -25,30 +25,33 @@ const scrapeCategory = (browser, url) => new Promise(async (resolve, reject) => 
         reject(error)
     }
 })
-const scrapeItems = (browser, url) => new Promise(async (resolve, reject) => {
+const scrapeItems = async (browser, url) => {
     try {
-        let page = await browser.newPage()
+        let page = await browser.newPage();
         console.log('>> Mở tab mới ...');
-        await page.goto(url)
-        console.log('>>Truy cập vào ' + url)
-        await page.waitForSelector('#collection_content')
-        console.log('>> Website đã laod xong...');
+        await page.goto(url);
+        console.log('>> Truy cập vào ' + url);
 
-        const items = await page.$$eval('#collection-product-grid > div.grid-element', els => {
-            items = els.map(el => {
-                return el.querySelector('a.grid-view-item__link').href
-            })
-            return items
-        })
-        // await page.close()
-        // console.log('>> Tab đã đóng.');
-        resolve(items)
+        // Không cần đợi trang tải hoàn toàn
+        await page.waitForSelector('#collection_content');
 
+        console.log('>> Website đã load xong...');
+
+        const items = await page.evaluate(() => {
+            const itemElements = Array.from(document.querySelectorAll('#collection-product-grid > div.grid-element'));
+            return itemElements.map(el => el.querySelector('a.grid-view-item__link').href);
+        });
+
+        await page.close();
+        console.log('>> Tab đã đóng.');
+
+        return items;
     } catch (error) {
-        console.log('lỗi ở scrape items: ' + error)
-        reject(error)
+        console.log('Lỗi ở scrape items: ' + error);
+        throw error;
     }
-})
+};
+
 
 const scraper = (browser, url) => new Promise(async (resolve, reject) => {
     try {
